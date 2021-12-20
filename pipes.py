@@ -840,47 +840,44 @@ class _BasePipe(object):
         # Verify that thermal properties are greater than 0.
         if not self.k_s > 0.:
             raise ValueError(
-                'The ground thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_s))
+                f'The ground thermal conductivity must be greater than zero. '
+                f'A value of {self.k_s} was provided.')
         if not self.k_g > 0.:
             raise ValueError(
-                'The grout thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_g))
+                f'The grout thermal conductivity must be greater than zero. '
+                f'A value of {self.k_g} was provided.')
         if not self.R_fp > 0.:
             raise ValueError(
-                'The fluid to outer pipe wall thermal resistance must be'
-                'greater than zero. '
-                'A value of {} was provided.'.format(self.R_fp))
+                f'The fluid to outer pipe wall thermal resistance must be'
+                f'greater than zero. '
+                f'A value of {self.R_fp} was provided.')
 
         # Verify that the pipe radius is greater than zero.
         if not self.r_in > 0.:
             raise ValueError(
-                'The pipe inner radius must be greater than zero. '
-                'A value of {} was provided.'.format(self.r_in))
+                f'The pipe inner radius must be greater than zero. '
+                f'A value of {self.r_in} was provided.')
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
         if not self.r_out > self.r_in:
             raise ValueError(
-                'The pipe outer radius must be greater than the pipe inner'
-                ' radius. '
-                'A value of {} was provided.'.format(self.r_out))
+                f'The pipe outer radius must be greater than the pipe inner '
+                f'radius. A value of {self.r_out} was provided.')
 
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
             raise ValueError(
-                'The number of terms in the multipole expansion must be zero'
-                ' or greater. '
-                'A value of {} was provided.'.format(self.J))
+                f'The number of terms in the multipole expansion must be zero '
+                f'or greater. A value of {self.J} was provided.')
 
         # Verify that the pipes are contained within the borehole.
         for i in range(2*self.nPipes):
             r_pipe = np.sqrt(self.pos[i][0]**2 + self.pos[i][1]**2)
             if not r_pipe + self.r_out <= self.b.r_b:
                 raise ValueError(
-                    'Pipes must be entirely contained within the borehole. '
-                    'Pipe {} is partly or entirely outside the '
-                    'borehole.'.format(i))
+                    f'Pipes must be entirely contained within the borehole. '
+                    f'Pipe {i} is partly or entirely outside the borehole.')
 
         # Verify that the pipes do not collide to one another.
         for i in range(2*self.nPipes):
@@ -890,7 +887,7 @@ class _BasePipe(object):
                 dis = np.sqrt(dx**2 + dy**2)
                 if not dis >= 2*self.r_out:
                     raise ValueError(
-                        'Pipes {} and {} are overlapping.'.format(i, j))
+                        f'Pipes {i} and {j} are overlapping.')
 
         return True
 
@@ -1583,7 +1580,8 @@ class MultipleUTube(_BasePipe):
             a_out = np.array([[1.0]])
             a_b = e_u @ d_u_m1 @ d_b
         else:
-            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
+            raise NotImplementedError(f"Configuration '{self.config}' "
+                                      f"not implemented.")
 
         return a_in, a_out, a_b
 
@@ -1667,7 +1665,8 @@ class MultipleUTube(_BasePipe):
             a_out = np.zeros((2*self.nPipes, self.nOutlets))
             a_b = e_d @ c_u @ d_u_m1 @ d_b + e_u @ d_u_m1 @ d_b
         else:
-            raise NotImplementedError("Configuration '{}' not implemented.".format(self.config))
+            raise NotImplementedError(f"Configuration '{self.config}' not "
+                                      "implemented.")
 
         return a_in, a_out, a_b
 
@@ -2262,18 +2261,18 @@ class Coaxial(SingleUTube):
         ax.add_patch(borewall)
 
         # Pipes
-        for i in range(self.nPipes):
+        for i, (pos, color) in enumerate(zip(self.pos, colors)):
             # Coordinates of pipes
-            (x_in, y_in) = self.pos[i]
-            (x_out, y_out) = self.pos[i]
+            (x_in, y_in) = pos
+            (x_out, y_out) = pos
 
             # Pipe outline (inlet)
             pipe_in_in = plt.Circle(
                 (x_in, y_in), radius=self.r_in[0],
-                fill=False, linestyle='-', color=colors[i], lw=lw)
+                fill=False, linestyle='-', color=color, lw=lw)
             pipe_in_out = plt.Circle(
                 (x_in, y_in), radius=self.r_out[0],
-                fill=False, linestyle='-', color=colors[i], lw=lw)
+                fill=False, linestyle='-', color=color, lw=lw)
             if self._iInner == 0:
                 ax.text(x_in, y_in, i, ha="center", va="center")
             else:
@@ -2283,10 +2282,10 @@ class Coaxial(SingleUTube):
             # Pipe outline (outlet)
             pipe_out_in = plt.Circle(
                 (x_out, y_out), radius=self.r_in[1],
-                fill=False, linestyle='-', color=colors[i], lw=lw)
+                fill=False, linestyle='-', color=color, lw=lw)
             pipe_out_out = plt.Circle(
                 (x_out, y_out), radius=self.r_out[1],
-                fill=False, linestyle='-', color=colors[i], lw=lw)
+                fill=False, linestyle='-', color=color, lw=lw)
             if self._iInner == 1:
                 ax.text(x_out, y_out, i + self.nPipes, ha="center", va="center")
             else:
@@ -2309,36 +2308,34 @@ class Coaxial(SingleUTube):
         # Verify that thermal properties are greater than 0.
         if not self.k_s > 0.:
             raise ValueError(
-                'The ground thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_s))
+                f'The ground thermal conductivity must be greater than zero. '
+                f'A value of {self.k_s} was provided.')
         if not self.k_g > 0.:
             raise ValueError(
-                'The grout thermal conductivity must be greater than zero. '
-                'A value of {} was provided.'.format(self.k_g))
+                f'The grout thermal conductivity must be greater than zero. '
+                f'A value of {self.k_g} was provided.')
         if not np.all(self.R_ff) >= 0.:
             raise ValueError(
-                'The fluid to fluid thermal resistance must be'
-                'greater or equal to zero. '
-                'A value of {} was provided.'.format(self.R_ff))
+                f'The fluid to fluid thermal resistance must be'
+                f'greater or equal to zero. '
+                f'A value of {self.R_ff} was provided.')
         if not np.all(self.R_fp) > 0.:
             raise ValueError(
-                'The fluid to outer pipe wall thermal resistance must be'
-                'greater than zero. '
-                'A value of {} was provided.'.format(self.R_fp))
+                f'The fluid to outer pipe wall thermal resistance must be'
+                f'greater than zero. A value of {self.R_fp} was provided.')
 
         # Verify that the pipe radius is greater than zero.
         if not np.all(self.r_in) > 0.:
             raise ValueError(
-                'The pipe inner radius must be greater than zero. '
-                'A value of {} was provided.'.format(self.r_in))
+                f'The pipe inner radius must be greater than zero. '
+                f'A value of {self.r_in} was provided.')
 
         # Verify that the outer pipe radius is greater than the inner pipe
         # radius.
         if not np.all(np.greater(self.r_out, self.r_in)):
             raise ValueError(
-                'The pipe outer radius must be greater than the pipe inner'
-                ' radius. '
-                'A value of {} was provided.'.format(self.r_out))
+                f'The pipe outer radius must be greater than the pipe inner '
+                f'radius. A value of {self.r_out} was provided.')
 
         # Verify that the inner radius of the outer pipe is greater than the
         # outer radius of the inner pipe.
@@ -2350,9 +2347,8 @@ class Coaxial(SingleUTube):
         # Verify that the number of multipoles is zero or greater.
         if not self.J >= 0:
             raise ValueError(
-                'The number of terms in the multipole expansion must be zero'
-                ' or greater. '
-                'A value of {} was provided.'.format(self.J))
+                f'The number of terms in the multipole expansion must be zero '
+                f'or greater. A value of {self.J} was provided.')
 
         # Verify that the pipes are contained within the borehole.
         for i in range(len(self.pos)):
@@ -2360,9 +2356,9 @@ class Coaxial(SingleUTube):
             radii = r_pipe + self.r_out
             if not np.any(np.greater_equal(self.b.r_b, radii)):
                 raise ValueError(
-                    'Pipes must be entirely contained within the borehole. '
-                    'Pipe {} is partly or entirely outside the '
-                    'borehole.'.format(i))
+                    f'Pipes must be entirely contained within the borehole. '
+                    f'Pipe {i} is partly or entirely outside the '
+                    f'borehole.')
 
         return True
 
@@ -2888,12 +2884,12 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     """
     # Pipe coordinates in complex form
     n_p = len(pos)
-    z_p = np.array([pos[i][0] + 1.j*pos[i][1] for i in range(n_p)])
+    z_p = np.array([x + 1.j*y for (x, y) in pos])
     # If r_out and/or Rfp are supplied as float, build arrays of size n_p
     if np.isscalar(r_out):
-        r_out = np.ones(n_p)*r_out
+        r_out = np.full(n_p, r_out)
     if np.isscalar(R_fp):
-        R_fp = np.ones(n_p)*R_fp
+        R_fp = np.full(n_p, R_fp)
 
     # -------------------------------------
     # Thermal resistance matrix R0 (EQ. 33)
@@ -2902,13 +2898,13 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     sigma = (k_g - k_s)/(k_g + k_s)
     beta_p = 2*pi*k_g*R_fp
     R0 = np.zeros((n_p, n_p))
-    for i in range(n_p):
-        rbm = r_b**2/(r_b**2 - np.abs(z_p[i])**2)
-        R0[i, i] = pikg*(np.log(r_b/r_out[i]) + beta_p[i] + sigma*np.log(rbm))
-        for j in range(n_p):
+    for i, (z_i, beta_i, r_out_i) in enumerate(zip(z_p, beta_p, r_out)):
+        rbm = r_b**2/(r_b**2 - np.abs(z_i)**2)
+        R0[i, i] = pikg*(np.log(r_b/r_out_i) + beta_i + sigma*np.log(rbm))
+        for j, z_j in enumerate(z_p):
             if i != j:
-                dz = np.abs(z_p[i] - z_p[j])
-                rbm = r_b**2/np.abs(r_b**2 - z_p[j]*np.conj(z_p[i]))
+                dz = np.abs(z_i - z_j)
+                rbm = r_b**2/np.abs(r_b**2 - z_j*np.conj(z_i))
                 R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
 
     # Initialize maximum error and iteration counter
@@ -2919,8 +2915,8 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # -------------------
     if J > 0:
         P = np.zeros((n_p, J), dtype=np.cfloat)
-        coeff = -np.array([[(1 - (k+1)*beta_p[m])/(1 + (k+1)*beta_p[m])
-                           for k in range(J)] for m in range(n_p)])
+        coeff = -np.array([[(1 - (k+1)*beta_m)/(1 + (k+1)*beta_m)
+                           for k in range(J)] for beta_m in beta_p])
         while eps_max > eps and it < it_max:
             it += 1
             eps_max = 0.
@@ -2939,16 +2935,16 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # --------------------------
     T_f = T_b + R0 @ q_p
     if J > 0:
-        for m in range(n_p):
+        for m, z_m in enumerate(z_p):
             dTfm = 0. + 0.j
-            for n in range(n_p):
+            for n, (z_n, r_out_n) in enumerate(zip(z_p, r_out)):
                 for j in range(J):
                     # Second term
                     if n != m:
-                        dTfm += P[n,j]*(r_out[n]/(z_p[m]-z_p[n]))**(j+1)
+                        dTfm += P[n,j]*(r_out_n/(z_m-z_n))**(j+1)
                     # Third term
-                    dTfm += sigma*P[n,j]*(r_out[n]*np.conj(z_p[m]) \
-                                   /(r_b**2 - z_p[n]*np.conj(z_p[m])))**(j+1)
+                    dTfm += sigma*P[n,j]*(r_out_n*np.conj(z_m) \
+                                   /(r_b**2 - z_n*np.conj(z_m)))**(j+1)
             T_f[m] += np.real(dTfm)
 
     # -------------------------------
@@ -2956,36 +2952,37 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # -------------------------------
     n_T = len(x_T)
     T = np.zeros(n_T)
-    for i in range(n_T):
-        z_T = x_T[i] + 1.j*y_T[i]
+    for i, (x, y) in enumerate(zip(x_T, y_T)):
+        z_T = x + 1.j*y
         dT0 = 0. + 0.j
         dTJ = 0. + 0.j
-        for n in range(n_p):
-            if np.abs(z_T - z_p[n])/r_out[n] < 1.0:
+        for n, (z_n, r_out_n, q_n, T_n, P_n) in enumerate(
+                zip(z_p, r_out, q_p, T_f, P)):
+            if np.abs(z_T - z_n)/r_out_n < 1.0:
                 # Coordinate inside pipe
-                T[i] = T_f[n]
+                T[i] = T_n
                 break
             # Order 0
             if np.abs(z_T) <= r_b:
                 # Coordinate inside borehole
-                W0 = np.log(r_b/(z_T - z_p[n])) \
-                        + sigma*np.log(r_b**2/(r_b**2 - z_p[n]*np.conj(z_T)))
+                W0 = np.log(r_b/(z_T - z_n)) \
+                        + sigma*np.log(r_b**2/(r_b**2 - z_n*np.conj(z_T)))
             else:
                 # Coordinate outside borehole
-                W0 = (1. + sigma)*np.log(r_b/(z_T - z_p[n])) \
+                W0 = (1. + sigma)*np.log(r_b/(z_T - z_n)) \
                         + sigma*(1. + sigma)/(1. - sigma)*np.log(r_b/z_T)
-            dT0 += q_p[n]*pikg*W0
+            dT0 += q_n*pikg*W0
             # Multipoles
             for j in range(J):
                 if np.abs(z_T) <= r_b:
                     # Coordinate inside borehole
-                    WJ = (r_out[n]/(z_T - z_p[n]))**(j+1) \
-                            + sigma*((r_out[n]*np.conj(z_T))
-                                     /(r_b**2 - z_p[n]*np.conj(z_T)))**(j+1)
+                    WJ = (r_out_n/(z_T - z_n))**(j+1) \
+                            + sigma*((r_out_n*np.conj(z_T))
+                                     /(r_b**2 - z_n*np.conj(z_T)))**(j+1)
                 else:
                     # Coordinate outside borehole
-                    WJ = (1. + sigma)*(r_out[n]/(z_T - z_p[n]))**(j+1)
-                dTJ += P[n,j]*WJ
+                    WJ = (1. + sigma)*(r_out_n/(z_T - z_n))**(j+1)
+                dTJ += P_n[j]*WJ
         else:
             T[i] += T_b + np.real(dT0 + dTJ)
 
@@ -3027,30 +3024,31 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
-    for m in range(n_p):
+    for m, (z_m, r_out_m) in enumerate(zip(z, r_out)):
         for k in range(J):
             fmk = 0. + 0.j
-            for n in range(n_p):
+            for n, (z_n, r_out_n, q_n, P_n) in enumerate(
+                    zip(z, r_out, q_p, P)):
                 # First term
                 if m != n:
-                    fmk += q_p[n]*pikg/(k+1)*(r_out[m]/(z[n] - z[m]))**(k+1)
+                    fmk += q_n*pikg/(k+1)*(r_out_m/(z_n - z_m))**(k+1)
                 # Second term
-                fmk += sigma*q_p[n]*pikg/(k+1)*(r_out[m]*np.conj(z[n])/(
-                        r_b**2 - z[m]*np.conj(z[n])))**(k+1)
+                fmk += sigma*q_n*pikg/(k+1)*(r_out_m*np.conj(z_n)/(
+                        r_b**2 - z_m*np.conj(z_n)))**(k+1)
                 for j in range(J):
                     # Third term
                     if m != n:
-                        fmk += P[n,j]*binom(j+k+1, j) \
-                                *r_out[n]**(j+1)*(-r_out[m])**(k+1) \
-                                /(z[m] - z[n])**(j+k+2)
+                        fmk += P_n[j]*binom(j+k+1, j) \
+                                *r_out_n**(j+1)*(-r_out_m)**(k+1) \
+                                /(z_m - z_n)**(j+k+2)
                     # Fourth term
                     j_pend = np.min((k, j)) + 2
                     for jp in range(j_pend):
-                        fmk += sigma*np.conj(P[n,j])*binom(j+1, jp) \
-                                *binom(j+k-jp+1, j)*r_out[n]**(j+1) \
-                                *r_out[m]**(k+1)*z[m]**(j+1-jp) \
-                                *np.conj(z[n])**(k+1-jp) \
-                                /(r_b**2 - z[m]*np.conj(z[n]))**(k+j+2-jp)
+                        fmk += sigma*np.conj(P_n[j])*binom(j+1, jp) \
+                                *binom(j+k-jp+1, j)*r_out_n**(j+1) \
+                                *r_out_m**(k+1)*z_m**(j+1-jp) \
+                                *np.conj(z_n)**(k+1-jp) \
+                                /(r_b**2 - z_m*np.conj(z_n))**(k+j+2-jp)
             F[m,k] = fmk
 
     return F
@@ -3105,15 +3103,15 @@ def _Nusselt_number_turbulent_flow(Re, Pr, fDarcy):
 
     # Warn the user if the Reynolds number is out of bounds, but don't break
     if not 3.0E03 < Re < 5.0E06:
-        warnings.warn('This Nusselt calculation is only valid for Reynolds '
-                      'number in the range of 3.0E03 < Re < 5.0E06, your value'
-                      ' falls outside of the range at Re={0:.4f}'.format(Re))
+        warnings.warn(f'This Nusselt calculation is only valid for Reynolds '
+                      f'number in the range of 3.0E03 < Re < 5.0E06, your '
+                      f'value falls outside of the range at Re={Re:.4f}')
 
     # Warn the user if the Prandlt number is out of bounds
     if not 0.5 <= Pr <= 2000.:
-        warnings.warn('This Nusselt calculation is only valid for Prandlt '
-                      'numbers in the range of 0.5 <= Pr <= 2000, your value '
-                      'falls outside of the range at Pr={0:.4f}'.format(Pr))
+        warnings.warn(f'This Nusselt calculation is only valid for Prandlt '
+                      f'numbers in the range of 0.5 <= Pr <= 2000, your value '
+                      f'falls outside of the range at Pr={Pr:.4f}')
 
     Nu = 0.125 * fDarcy * (Re - 1.0e3) * Pr / \
         (1.0 + 12.7 * np.sqrt(0.125*fDarcy) * (Pr**(2.0/3.0) - 1.0))
