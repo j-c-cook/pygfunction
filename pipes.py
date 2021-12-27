@@ -2897,15 +2897,11 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     pikg = 1.0 / (2.0*pi*k_g)
     sigma = (k_g - k_s)/(k_g + k_s)
     beta_p = 2*pi*k_g*R_fp
-    R0 = np.zeros((n_p, n_p))
-    for i, (z_i, beta_i, r_out_i) in enumerate(zip(z_p, beta_p, r_out)):
-        rbm = r_b**2/(r_b**2 - np.abs(z_i)**2)
-        R0[i, i] = pikg*(np.log(r_b/r_out_i) + beta_i + sigma*np.log(rbm))
-        for j, z_j in enumerate(z_p):
-            if i != j:
-                dz = np.abs(z_i - z_j)
-                rbm = r_b**2/np.abs(r_b**2 - z_j*np.conj(z_i))
-                R0[i, j] = pikg*(np.log(r_b/dz) + sigma*np.log(rbm))
+    rbm = r_b**2/(r_b**2 - np.abs(z_p)**2)
+    R0 = np.diag(pikg * (np.log(r_b/r_out) + beta_p + sigma*np.log(rbm)))
+    rbmn = r_b**2/np.abs(r_b**2 - np.multiply.outer(np.conj(z_p), z_p))
+    dz = np.abs(np.subtract.outer(z_p + 1e-12, z_p))
+    R0 = R0 + (1 - np.eye(n_p)) * pikg * (np.log(r_b / dz) + sigma * np.log(rbmn))
 
     # Initialize maximum error and iteration counter
     eps_max = 1.0e99
@@ -2935,17 +2931,11 @@ def multipole(pos, r_out, r_b, k_s, k_g, R_fp, T_b, q_p, J,
     # --------------------------
     T_f = T_b + R0 @ q_p
     if J > 0:
-        for m, z_m in enumerate(z_p):
-            dTfm = 0. + 0.j
-            for n, (z_n, r_out_n) in enumerate(zip(z_p, r_out)):
-                for j in range(J):
-                    # Second term
-                    if n != m:
-                        dTfm += P[n,j]*(r_out_n/(z_m-z_n))**(j+1)
-                    # Third term
-                    dTfm += sigma*P[n,j]*(r_out_n*np.conj(z_m) \
-                                   /(r_b**2 - z_n*np.conj(z_m)))**(j+1)
-            T_f[m] += np.real(dTfm)
+        for j in range(J):
+            dz = np.subtract.outer(z_p + 1e-12, z_p)
+            T_f = T_f + np.real((1 - np.eye(n_p)) / dz**(j+1) @ (P[:,j] * r_out**(j+1)))
+            zz = np.multiply.outer(np.conj(z_p), z_p)
+            T_f = T_f + sigma * np.real(np.conj(z_p)**(j+1) * (1 / (r_b**2 - zz)**(j+1) @ (P[:,j] * r_out**(j+1))))
 
     # -------------------------------
     # Requested temperatures (EQ. 28)
@@ -3024,32 +3014,17 @@ def _F_mk(q_p, P, n_p, J, r_b, r_out, z, pikg, sigma):
 
     """
     F = np.zeros((n_p, J), dtype=np.cfloat)
-    for m, (z_m, r_out_m) in enumerate(zip(z, r_out)):
-        for k in range(J):
-            fmk = 0. + 0.j
-            for n, (z_n, r_out_n, q_n, P_n) in enumerate(
-                    zip(z, r_out, q_p, P)):
-                # First term
-                if m != n:
-                    fmk += q_n*pikg/(k+1)*(r_out_m/(z_n - z_m))**(k+1)
-                # Second term
-                fmk += sigma*q_n*pikg/(k+1)*(r_out_m*np.conj(z_n)/(
-                        r_b**2 - z_m*np.conj(z_n)))**(k+1)
-                for j in range(J):
-                    # Third term
-                    if m != n:
-                        fmk += P_n[j]*binom(j+k+1, j) \
-                                *r_out_n**(j+1)*(-r_out_m)**(k+1) \
-                                /(z_m - z_n)**(j+k+2)
-                    # Fourth term
-                    j_pend = np.min((k, j)) + 2
-                    for jp in range(j_pend):
-                        fmk += sigma*np.conj(P_n[j])*binom(j+1, jp) \
-                                *binom(j+k-jp+1, j)*r_out_n**(j+1) \
-                                *r_out_m**(k+1)*z_m**(j+1-jp) \
-                                *np.conj(z_n)**(k+1-jp) \
-                                /(r_b**2 - z_m*np.conj(z_n))**(k+j+2-jp)
-            F[m,k] = fmk
+    for k in range(J):
+        # First term
+        F[:,k] = F[:,k] + r_out**(k+1) * pikg / (k + 1) * ((1 - np.eye(n_p)) / np.add.outer(-z, z + 1e-12)**(k+1) @ q_p)
+        # Second term
+        F[:,k] = F[:,k] + sigma * r_out**(k+1) * pikg / (k + 1) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+1) @ (q_p * np.conj(z)**(k+1)))
+        for j in range(J):
+            # Third term
+            F[:,k] = F[:,k] + binom(j+k+1, j) * (-r_out)**(k+1) * ((1 - np.eye(n_p)) / np.add.outer(z + 1e-12, -z)**(j+k+2) @ (P[:,j] * r_out**(j+1)))
+            j_pend = min(k, j) + 2
+            for jp in range(j_pend):
+                F[:,k] = F[:,k] + sigma * binom(j+1, jp) * binom(j+k-jp+1, j) * r_out**(k+1) * z**(j+1-jp) * (1 / (r_b**2 - np.multiply.outer(z, np.conj(z)))**(k+j+2-jp) @ (np.conj(P[:,j]) * r_out**(j+1) * np.conj(z)**(k+1-jp)))
 
     return F
 
