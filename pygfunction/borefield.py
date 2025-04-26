@@ -43,30 +43,25 @@ class Borefield:
             self, H: npt.ArrayLike, D: npt.ArrayLike, r_b: npt.ArrayLike,
             x: npt.ArrayLike, y: npt.ArrayLike, tilt: npt.ArrayLike = 0.,
             orientation: npt.ArrayLike = 0.):
-        # Convert x and y coordinates to arrays
-        x = np.atleast_1d(x)
-        y = np.atleast_1d(y)
-        self.nBoreholes = np.maximum(len(x), len(y))
+        arg_names = ("H", "D", "r_b", "x", "y", "tilt", "orientation")
+        args = (H, D, r_b, x, y, tilt, orientation)
 
-        # Broadcast all variables to arrays of length `nBoreholes`
-        self.H = np.broadcast_to(H, self.nBoreholes)
-        self.D = np.broadcast_to(D, self.nBoreholes)
-        self.r_b = np.broadcast_to(r_b, self.nBoreholes)
-        self.x = np.broadcast_to(x, self.nBoreholes)
-        self.y = np.broadcast_to(y, self.nBoreholes)
-        self.tilt = np.broadcast_to(tilt, self.nBoreholes)
+        b = np.broadcast(*args)
+        assert b.ndim == 1, "All inputs must be scalars or 1D arrays."
+        self.nBoreholes = b.size
 
-        # Identify tilted boreholes
-        self._is_tilted = np.broadcast_to(
-            np.greater(np.abs(tilt), 1e-6),
-            self.nBoreholes)
-        # Vertical boreholes default to an orientation of zero
-        if not np.any(self._is_tilted):
-            self.orientation = np.broadcast_to(0., self.nBoreholes)
-        elif np.all(self._is_tilted):
-            self.orientation = np.broadcast_to(orientation, self.nBoreholes)
-        else:
-            self.orientation = np.multiply(orientation, self._is_tilted)
+        for name, value in zip(arg_names, args):
+            try:
+                setattr(self, name, np.broadcast_to(value, self.nBoreholes))
+            except ValueError:
+                raise ValueError(f'{name} of shape {np.shape(value)} could not be broadcast to shape {np.shape(b)}')
+
+        # Identify tilted boreholes. Vertical boreholes default to an orientation of zero
+        self.orientation = np.where(
+            np.broadcast_to(np.abs(tilt) > 1e-6, self.nBoreholes),
+            orientation,
+            0.
+        )
 
     def __getitem__(self, key):
         if isinstance(key, (int, np.integer)):
